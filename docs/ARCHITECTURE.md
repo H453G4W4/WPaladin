@@ -82,9 +82,26 @@ The suite is hermetic: `tests/conftest.py` builds an `httpx.MockTransport` from 
 small routing table, so checks and full scans are exercised end-to-end without
 touching the network.
 
+## API & dashboard layer
+
+`wp_sentinel.api` is a thin FastAPI layer over `Scanner` + `report`, backed by
+`wp_sentinel.store.ScanStore` (an async, in-memory scan registry tracking
+`queued → running → completed/failed`). `create_app()` wires REST endpoints, a
+WebSocket status stream, and serves the single-file dashboard
+(`api/dashboard.html`). Scans run as background `asyncio` tasks so requests
+return immediately while the dashboard polls (or subscribes over WS) for status.
+
+The authorization gate is enforced at this layer too: `POST /api/v1/scans`
+returns 403 unless the body sets `authorized: true`. `create_app(transport=...)`
+accepts an injectable httpx transport so the API is testable without network
+access. `ScanStore` is deliberately behind a small interface — swapping it for a
+database-backed implementation (per the schema in the original brief) touches
+nothing else.
+
 ## Extending toward the larger vision
 
 The layered design leaves clean seams for the *defensive* roadmap items:
-scheduled re-scans and CVE monitoring wrap `Scanner`; a REST API is a thin layer
-over `Scanner` + `report`; persistence is a matter of serializing `ScanResult`.
-None of that requires touching the check contract.
+scheduled re-scans and CVE monitoring wrap `Scanner`; persistence is a matter of
+serializing `ScanResult` behind the `ScanStore` interface; webhooks/alerting hook
+the store's status transitions. None of that requires touching the check
+contract.

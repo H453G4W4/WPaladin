@@ -95,6 +95,23 @@ def _cmd_checks(_: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_serve(args: argparse.Namespace) -> int:
+    try:
+        import uvicorn
+    except ImportError:
+        print(
+            "The dashboard requires the optional API dependencies. Install with:\n"
+            "  pip install 'wp-sentinel[api]'",
+            file=sys.stderr,
+        )
+        return 2
+    from .api import create_app
+
+    print(f"WP-Sentinel dashboard: http://{args.host}:{args.port}")
+    uvicorn.run(create_app(), host=args.host, port=args.port, log_level="info")
+    return 0
+
+
 def _cmd_profiles(_: argparse.Namespace) -> int:
     print("Scan profiles:\n")
     for name, profile in PROFILES.items():
@@ -139,6 +156,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     profiles_cmd = sub.add_parser("profiles", help="List scan profiles.")
     profiles_cmd.set_defaults(func=_cmd_profiles, is_async=False)
+
+    serve = sub.add_parser("serve", help="Launch the web dashboard + API.")
+    serve.add_argument("--host", default="127.0.0.1", help="Bind host (default: 127.0.0.1).")
+    serve.add_argument("--port", type=int, default=8000, help="Bind port (default: 8000).")
+    serve.set_defaults(func=_cmd_serve, is_async=False)
 
     return parser
 

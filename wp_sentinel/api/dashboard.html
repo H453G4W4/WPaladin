@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WP-Sentinel Dashboard</title>
+<style>
+  :root {
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --line:#334155;
+    --text:#e2e8f0; --muted:#94a3b8; --accent:#38bdf8;
+    --critical:#ef4444; --high:#f97316; --medium:#eab308; --low:#3b82f6; --info:#64748b;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,sans-serif; background:var(--bg); color:var(--text); }
+  header { padding:1rem 1.5rem; border-bottom:1px solid var(--line); display:flex;
+           align-items:center; gap:.75rem; }
+  header h1 { font-size:1.15rem; margin:0; }
+  header .tag { font-size:.7rem; color:var(--muted); border:1px solid var(--line);
+                border-radius:999px; padding:.1rem .5rem; }
+  .note { font-size:.75rem; color:var(--muted); margin-left:auto; max-width:46ch;
+          text-align:right; line-height:1.3; }
+  main { display:grid; grid-template-columns:340px 1fr; gap:1rem; padding:1rem 1.5rem; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:12px;
+          padding:1rem; }
+  label { display:block; font-size:.78rem; color:var(--muted); margin:.6rem 0 .25rem; }
+  input[type=text], select { width:100%; padding:.55rem .6rem; border-radius:8px;
+    border:1px solid var(--line); background:var(--panel2); color:var(--text); font-size:.9rem; }
+  .checkline { display:flex; gap:.5rem; align-items:flex-start; margin-top:.75rem;
+               font-size:.82rem; color:var(--muted); }
+  button { cursor:pointer; border:0; border-radius:8px; padding:.55rem .9rem;
+           font-weight:600; font-size:.9rem; background:var(--accent); color:#03263a; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  button.ghost { background:var(--panel2); color:var(--text); border:1px solid var(--line);
+                 padding:.3rem .6rem; font-size:.78rem; }
+  h2 { font-size:.8rem; text-transform:uppercase; letter-spacing:.05em; color:var(--muted);
+       margin:.25rem 0 .75rem; }
+  .scan { padding:.6rem .7rem; border:1px solid var(--line); border-radius:9px;
+          margin-bottom:.5rem; cursor:pointer; }
+  .scan:hover { border-color:var(--accent); }
+  .scan.sel { border-color:var(--accent); background:var(--panel2); }
+  .scan .u { font-size:.85rem; word-break:break-all; }
+  .scan .m { font-size:.72rem; color:var(--muted); margin-top:.2rem; display:flex;
+             gap:.4rem; align-items:center; flex-wrap:wrap; }
+  .badge { font-size:.66rem; font-weight:700; letter-spacing:.03em; color:#fff;
+           border-radius:999px; padding:.08rem .45rem; }
+  .b-critical{background:var(--critical)} .b-high{background:var(--high)}
+  .b-medium{background:var(--medium);color:#3b2f00} .b-low{background:var(--low)}
+  .b-info{background:var(--info)}
+  .b-queued{background:#475569} .b-running{background:var(--accent);color:#03263a}
+  .b-completed{background:#16a34a} .b-failed{background:var(--critical)}
+  .counts { display:flex; gap:.35rem; flex-wrap:wrap; margin:.75rem 0; }
+  .pill { font-size:.72rem; border:1px solid var(--line); border-radius:8px;
+          padding:.2rem .5rem; color:var(--muted); }
+  .finding { border:1px solid var(--line); border-left-width:4px; border-radius:9px;
+             padding:.7rem .85rem; margin-bottom:.6rem; }
+  .finding h3 { margin:0 0 .3rem; font-size:.95rem; display:flex; gap:.5rem;
+                align-items:center; flex-wrap:wrap; }
+  .finding p { margin:.3rem 0; font-size:.85rem; color:#cbd5e1; }
+  .finding .rem { background:var(--panel2); border-radius:7px; padding:.45rem .6rem;
+                  font-size:.82rem; }
+  .finding .ev { font-family:ui-monospace,monospace; font-size:.75rem; color:var(--muted);
+                 word-break:break-all; }
+  .toolbar { display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:.75rem; }
+  .empty { color:var(--muted); font-size:.9rem; padding:2rem 0; text-align:center; }
+  .err { color:var(--critical); font-size:.82rem; margin-top:.5rem; }
+  a.dl { color:var(--accent); font-size:.78rem; text-decoration:none; border:1px solid var(--line);
+         border-radius:8px; padding:.3rem .6rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🛡️ WP-Sentinel</h1>
+  <span class="tag" id="version">dashboard</span>
+  <span class="note">Non-destructive auditing only. Scan sites you own or are
+    explicitly authorized to test.</span>
+</header>
+
+<main>
+  <div>
+    <div class="card">
+      <h2>New scan</h2>
+      <label for="url">Target URL</label>
+      <input type="text" id="url" placeholder="https://your-site.example" autocomplete="off">
+      <label for="profile">Profile</label>
+      <select id="profile"></select>
+      <div class="checkline">
+        <input type="checkbox" id="authorized">
+        <label for="authorized" style="margin:0">I own this site or am explicitly
+          authorized to test it.</label>
+      </div>
+      <div style="margin-top:.85rem">
+        <button id="start" disabled>Start scan</button>
+      </div>
+      <div class="err" id="formErr"></div>
+    </div>
+
+    <div class="card" style="margin-top:1rem">
+      <h2>Scans</h2>
+      <div id="scanList"><div class="empty">No scans yet.</div></div>
+    </div>
+  </div>
+
+  <div class="card" id="detail">
+    <div class="empty">Select or start a scan to see findings.</div>
+  </div>
+</main>
+
+<script>
+const api = (p, o) => fetch(p, o).then(async r => {
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(body.detail || r.statusText);
+  return body;
+});
+let selected = null;
+let pollTimer = null;
+
+function badge(kind, text) {
+  return `<span class="badge b-${kind}">${(text||kind).toUpperCase()}</span>`;
+}
+
+async function loadProfiles() {
+  const profiles = await api('/api/v1/profiles');
+  const sel = document.getElementById('profile');
+  sel.innerHTML = profiles.map(p =>
+    `<option value="${p.name}" ${p.name==='standard'?'selected':''}>${p.name} — ${p.description.slice(0,48)}…</option>`
+  ).join('');
+}
+
+async function loadHealth() {
+  try { const h = await api('/api/v1/health'); document.getElementById('version').textContent = 'v'+h.version; }
+  catch {}
+}
+
+function counts(sc) {
+  if (!sc) return '';
+  const order = ['critical','high','medium','low','info'];
+  return `<div class="counts">${order.map(s =>
+    `<span class="pill">${badge(s)} ${sc[s]||0}</span>`).join('')}</div>`;
+}
+
+async function refreshScans() {
+  const scans = await api('/api/v1/scans');
+  const el = document.getElementById('scanList');
+  if (!scans.length) { el.innerHTML = '<div class="empty">No scans yet.</div>'; return; }
+  el.innerHTML = scans.map(s => {
+    const hs = s.highest_severity ? badge(s.highest_severity) : '';
+    return `<div class="scan ${s.id===selected?'sel':''}" data-id="${s.id}">
+      <div class="u">${s.url}</div>
+      <div class="m">${badge(s.status)} <span>${s.profile}</span>
+        ${s.findings_count!=null?`<span>· ${s.findings_count} findings</span>`:''} ${hs}</div>
+    </div>`;
+  }).join('');
+  el.querySelectorAll('.scan').forEach(n =>
+    n.onclick = () => selectScan(n.dataset.id));
+  const anyRunning = scans.some(s => s.status==='running'||s.status==='queued');
+  if (anyRunning && !pollTimer) pollTimer = setInterval(tick, 1000);
+  if (!anyRunning && pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
+
+async function tick() {
+  await refreshScans();
+  if (selected) await renderDetail(selected);
+}
+
+async function selectScan(id) {
+  selected = id;
+  await refreshScans();
+  await renderDetail(id);
+}
+
+async function renderDetail(id) {
+  const detail = document.getElementById('detail');
+  const rec = await api('/api/v1/scans/'+id);
+  let html = `<div class="toolbar">
+      <div style="flex:1">
+        <div style="font-size:1rem;word-break:break-all">${rec.url}</div>
+        <div class="m" style="color:var(--muted);font-size:.78rem;margin-top:.2rem">
+          ${badge(rec.status)} profile ${rec.profile}
+          ${rec.duration_seconds!=null?`· ${rec.duration_seconds}s`:''}</div>
+      </div>
+      <a class="dl" href="/api/v1/scans/${id}/report?format=html" target="_blank">HTML</a>
+      <a class="dl" href="/api/v1/scans/${id}/report?format=json" target="_blank">JSON</a>
+      <a class="dl" href="/api/v1/scans/${id}/report?format=csv" target="_blank">CSV</a>
+    </div>`;
+  if (rec.error) html += `<div class="err">${rec.error}</div>`;
+  html += counts(rec.severity_counts);
+
+  if (rec.status === 'completed') {
+    const data = await api(`/api/v1/scans/${id}/findings`);
+    if (!data.findings.length) html += '<div class="empty">No findings. Clean scan. </div>';
+    else html += data.findings.map(f => {
+      const color = `var(--${f.severity})`;
+      return `<div class="finding" style="border-left-color:${color}">
+        <h3>${badge(f.severity)} ${f.title}
+          <span style="color:var(--muted);font-size:.72rem;font-weight:400">CVSS ${f.score.toFixed(1)}</span></h3>
+        <p>${f.description}</p>
+        ${f.url?`<p class="ev">${f.url}</p>`:''}
+        ${f.evidence?`<p class="ev">evidence: ${f.evidence}</p>`:''}
+        <div class="rem"><strong>Fix:</strong> ${f.remediation}</div>
+      </div>`;
+    }).join('');
+  } else if (rec.status === 'failed') {
+    html += '<div class="empty">Scan failed. </div>';
+  } else {
+    html += '<div class="empty">Scanning… findings will appear here.</div>';
+  }
+  detail.innerHTML = html;
+}
+
+document.getElementById('authorized').onchange = e =>
+  document.getElementById('start').disabled = !e.target.checked;
+
+document.getElementById('start').onclick = async () => {
+  const btn = document.getElementById('start');
+  const err = document.getElementById('formErr');
+  err.textContent = '';
+  const url = document.getElementById('url').value.trim();
+  if (!url) { err.textContent = 'Enter a target URL.'; return; }
+  btn.disabled = true;
+  try {
+    const rec = await api('/api/v1/scans', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        url, profile: document.getElementById('profile').value, authorized: true })
+    });
+    document.getElementById('authorized').checked = false;
+    await selectScan(rec.id);
+  } catch (e) { err.textContent = e.message; }
+  finally { btn.disabled = document.getElementById('authorized').checked ? false : true; }
+};
+
+loadHealth();
+loadProfiles();
+refreshScans();
+</script>
+</body>
+</html>

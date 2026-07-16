@@ -23,11 +23,15 @@ of WordPress security tooling. That scope is a feature, not a limitation.
 
 - WordPress detection and version-disclosure reporting
 - HTTP security-header analysis (HSTS, CSP, X-Frame-Options, …)
+- TLS/SSL analysis (HTTPS enforcement, cert expiry, deprecated protocols)
 - XML-RPC exposure detection
 - Username enumeration detection (REST API, author archives)
+- Plugin enumeration and plugin version disclosure (via public `readme.txt`)
+- REST API index exposure, externally triggerable `wp-cron.php`, `security.txt`
 - Exposed sensitive-file detection (`.env`, `.git`, config backups, debug logs)
 - Directory-listing detection
 - Severity + CVSS-style scoring, and JSON / HTML / CSV reports
+- **A browser dashboard + REST/WebSocket API** to launch scans and browse findings
 - An authorization gate and polite, rate-limited requests by default
 
 **Intentionally out of scope (and not accepted as contributions):**
@@ -82,6 +86,42 @@ wp-sentinel profiles    # passive / standard / thorough
 ```
 
 You can also run it as a module: `python -m wp_sentinel ...`.
+
+## Browser dashboard & API
+
+WP-Sentinel ships a web dashboard for launching scans and browsing findings,
+backed by a REST + WebSocket API.
+
+```bash
+pip install -e ".[api]"           # or ".[dev]"
+wp-sentinel serve                 # http://127.0.0.1:8000
+wp-sentinel serve --host 0.0.0.0 --port 8080
+```
+
+Open the URL in a browser: enter a target, pick a profile, tick the
+authorization box, and start. Running scans update live; completed scans show
+findings grouped by severity with remediation, plus one-click JSON/HTML/CSV
+report downloads.
+
+The API mirrors the CLI's guardrail — `POST /api/v1/scans` is rejected with
+**403** unless the request body includes `"authorized": true`.
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| POST | `/api/v1/scans` | Start a scan (requires `authorized: true`) |
+| GET  | `/api/v1/scans` | List scans |
+| GET  | `/api/v1/scans/{id}` | Status + summary |
+| GET  | `/api/v1/scans/{id}/findings` | Full findings |
+| GET  | `/api/v1/scans/{id}/report?format=html\|json\|csv` | Rendered report |
+| WS   | `/api/v1/scans/{id}/ws` | Live status stream |
+| GET  | `/api/v1/checks`, `/api/v1/profiles`, `/api/v1/health` | Metadata |
+
+```bash
+# Start a scan against a site you are authorized to test
+curl -X POST http://127.0.0.1:8000/api/v1/scans \
+  -H 'Content-Type: application/json' \
+  -d '{"url":"https://your-site.example","authorized":true,"profile":"standard"}'
+```
 
 ### The authorization gate
 

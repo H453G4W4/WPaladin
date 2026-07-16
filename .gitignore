@@ -9,6 +9,7 @@ dist/
 htmlcov/
 .venv/
 venv/
-*.html
-!docs/**/*.html
+# Generated scan reports (but keep source HTML assets)
+/report*.html
+/*-report.html
 reports/
