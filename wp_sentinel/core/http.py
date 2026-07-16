@@ -10,7 +10,7 @@ security tool.
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 import httpx
@@ -23,12 +23,18 @@ DEFAULT_USER_AGENT = f"WP-Sentinel/{__version__} (+authorized security audit)"
 
 @dataclass
 class Response:
-    """A minimal, framework-agnostic view of an HTTP response."""
+    """A minimal, framework-agnostic view of an HTTP response.
+
+    ``set_cookies`` preserves each ``Set-Cookie`` header separately (the flat
+    ``headers`` dict would collapse duplicates), which cookie-security checks
+    need.
+    """
 
     status_code: int
     url: str
     headers: dict[str, str]
     text: str
+    set_cookies: list[str] = field(default_factory=list)
 
     def header(self, name: str) -> str | None:
         """Case-insensitive header lookup."""
@@ -102,6 +108,7 @@ class RateLimitedClient:
             url=str(resp.url),
             headers=dict(resp.headers),
             text=resp.text,
+            set_cookies=resp.headers.get_list("set-cookie"),
         )
 
     async def get(self, url: str, **kwargs: Any) -> Response | None:

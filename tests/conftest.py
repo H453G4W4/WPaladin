@@ -54,3 +54,25 @@ class MockSite:
 @pytest.fixture
 def mock_site() -> Callable[[], MockSite]:
     return MockSite
+
+
+@pytest.fixture(autouse=True)
+def _offline_tls(monkeypatch):
+    """Keep the TLS check hermetic.
+
+    ``TlsCheck`` opens a raw socket, which would otherwise make real network
+    calls during scanner/API tests. Stub the probe with a healthy result
+    (modern protocol, far-future cert) so it produces no findings unless a test
+    overrides it. Dedicated TLS tests re-patch ``_probe`` for their scenario.
+    """
+    import datetime as dt
+
+    from wp_sentinel.checks.tls import TlsCheck, _TlsInfo
+
+    def healthy(host, port, timeout):
+        return _TlsInfo(
+            protocol="TLSv1.3",
+            not_after=dt.datetime(2099, 1, 1, tzinfo=dt.timezone.utc),
+        )
+
+    monkeypatch.setattr(TlsCheck, "_probe", staticmethod(healthy))

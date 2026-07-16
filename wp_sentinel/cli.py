@@ -136,7 +136,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="Scan profile (default: standard).",
     )
     scan.add_argument(
-        "--format", default="json", choices=["json", "html", "csv"],
+        "--format", default="json",
+        choices=["json", "html", "csv", "sarif", "markdown", "md"],
         help="Report format (default: json).",
     )
     scan.add_argument("-o", "--output", help="Write the report to a file.")

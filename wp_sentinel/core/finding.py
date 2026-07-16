@@ -72,6 +72,8 @@ class Finding:
         cve: Associated CVE identifier, if any.
         cvss: Explicit CVSS base score override; falls back to the severity's
             representative score when ``None``.
+        owasp: OWASP Top 10 (2021) category, e.g. "A05:2021".
+        cwe: CWE identifier, e.g. "CWE-200".
         references: Helpful links (advisories, docs).
     """
 
@@ -84,6 +86,8 @@ class Finding:
     evidence: str | None = None
     cve: str | None = None
     cvss: float | None = None
+    owasp: str | None = None
+    cwe: str | None = None
     references: list[str] = field(default_factory=list)
 
     @property

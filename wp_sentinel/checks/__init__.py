@@ -17,5 +17,9 @@ from . import directory_listing  # noqa: F401
 from . import tls  # noqa: F401
 from . import plugins  # noqa: F401
 from . import misc_endpoints  # noqa: F401
+from . import cookies  # noqa: F401
+from . import cors  # noqa: F401
+from . import server_tech  # noqa: F401
+from . import wp_endpoints  # noqa: F401
 
 __all__ = ["Check", "CheckContext", "register", "all_checks"]

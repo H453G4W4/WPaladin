@@ -74,6 +74,64 @@ _FILES: tuple[_FileSpec, ...] = (
         "credentials and secret keys.",
         marker="DB_",
     ),
+    _FileSpec(
+        ".svn/entries",
+        Severity.HIGH,
+        "Exposed Subversion metadata",
+        "A reachable .svn directory can disclose source code and repository "
+        "structure.",
+    ),
+    _FileSpec(
+        "composer.lock",
+        Severity.LOW,
+        "Exposed composer.lock",
+        "composer.lock reveals exact PHP dependency versions, easing CVE matching.",
+        marker="packages",
+    ),
+    _FileSpec(
+        "package-lock.json",
+        Severity.LOW,
+        "Exposed package-lock.json",
+        "package-lock.json reveals exact JS dependency versions, easing CVE "
+        "matching.",
+        marker="lockfileVersion",
+    ),
+    _FileSpec(
+        "backup.zip",
+        Severity.HIGH,
+        "Exposed backup archive",
+        "A downloadable site backup archive may contain source code, "
+        "credentials, and database contents.",
+    ),
+    _FileSpec(
+        "backup.sql",
+        Severity.CRITICAL,
+        "Exposed database dump (backup.sql)",
+        "A publicly downloadable SQL dump exposes the entire database, including "
+        "user records and hashes.",
+        marker="INSERT INTO",
+    ),
+    _FileSpec(
+        "database.sql",
+        Severity.CRITICAL,
+        "Exposed database dump (database.sql)",
+        "A publicly downloadable SQL dump exposes the entire database, including "
+        "user records and hashes.",
+        marker="INSERT INTO",
+    ),
+    _FileSpec(
+        "wp-config.php.swp",
+        Severity.CRITICAL,
+        "Exposed editor swap file for wp-config",
+        "A Vim swap file for wp-config.php can be reconstructed to recover "
+        "database credentials.",
+    ),
+    _FileSpec(
+        ".DS_Store",
+        Severity.LOW,
+        "Exposed .DS_Store file",
+        ".DS_Store leaks directory and file names that aid enumeration.",
+    ),
 )
 
 
@@ -109,6 +167,8 @@ class SensitiveFilesCheck(Check):
                     ),
                     url=resp.url,
                     evidence=f"HTTP 200 at {spec.path}",
+                    owasp="A05:2021",
+                    cwe="CWE-538",
                 )
             )
         return findings

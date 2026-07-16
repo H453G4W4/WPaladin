@@ -22,15 +22,23 @@ of WordPress security tooling. That scope is a feature, not a limitation.
 **In scope (implemented):**
 
 - WordPress detection and version-disclosure reporting
-- HTTP security-header analysis (HSTS, CSP, X-Frame-Options, …)
+- HTTP security-header analysis — HSTS (+ preload readiness), CSP (+ weak-directive
+  detection), Permissions-Policy, COOP/COEP/CORP, X-Frame-Options, and more
+- Cookie attribute analysis (Secure / HttpOnly / SameSite)
+- CORS policy analysis (reflected-origin-with-credentials, wildcard)
 - TLS/SSL analysis (HTTPS enforcement, cert expiry, deprecated protocols)
+- Server / CDN / hosting detection from ordinary response headers
 - XML-RPC exposure detection
 - Username enumeration detection (REST API, author archives)
 - Plugin enumeration and plugin version disclosure (via public `readme.txt`)
-- REST API index exposure, externally triggerable `wp-cron.php`, `security.txt`
-- Exposed sensitive-file detection (`.env`, `.git`, config backups, debug logs)
+- REST API index exposure, externally triggerable `wp-cron.php`, `security.txt`,
+  install-script exposure, robots.txt path disclosure
+- Exposed sensitive-file detection (`.env`, `.git`, `.svn`, config backups, DB
+  dumps, lockfiles, editor swap files, debug logs, …)
 - Directory-listing detection
-- Severity + CVSS-style scoring, and JSON / HTML / CSV reports
+- Severity + CVSS-style scoring, **OWASP Top 10 / CWE mapping**, and a **0–100
+  hardening score** with a letter grade
+- Reports in **JSON, HTML, CSV, SARIF, and Markdown**
 - **A browser dashboard + REST/WebSocket API** to launch scans and browse findings
 - An authorization gate and polite, rate-limited requests by default
 
@@ -150,6 +158,13 @@ known sensitive paths — never writes or exploits.
 - **JSON** (`--format json`) — machine-readable, SIEM-friendly (default)
 - **HTML** (`--format html`) — self-contained, shareable report
 - **CSV** (`--format csv`) — spreadsheet / ticketing import
+- **SARIF** (`--format sarif`) — GitHub code scanning / SARIF-aware tooling
+- **Markdown** (`--format markdown` or `md`) — executive summary + technical
+  detail for issues, wikis, and PR descriptions
+
+Every finding carries a severity, a representative CVSS score, and (where
+applicable) OWASP Top 10 and CWE identifiers. Reports also include an aggregate
+**hardening score** (0–100) and letter grade for trend tracking across scans.
 
 ## Development
 

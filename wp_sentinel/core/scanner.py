@@ -51,6 +51,32 @@ class ScanResult:
             return None
         return max(f.severity for f in self.findings)
 
+    def hardening_score(self) -> int:
+        """A 0–100 posture score (higher is better).
+
+        Starts at 100 and deducts weighted penalties per finding by severity,
+        clamped to the 0–100 range. INFO findings do not affect the score. This
+        is a heuristic posture indicator for trend tracking, not a CVSS
+        aggregate.
+        """
+        penalties = {
+            Severity.CRITICAL: 40,
+            Severity.HIGH: 20,
+            Severity.MEDIUM: 8,
+            Severity.LOW: 3,
+            Severity.INFO: 0,
+        }
+        deduction = sum(penalties[f.severity] for f in self.findings)
+        return max(0, min(100, 100 - deduction))
+
+    def grade(self) -> str:
+        """Letter grade derived from :meth:`hardening_score`."""
+        score = self.hardening_score()
+        for threshold, letter in ((90, "A"), (80, "B"), (70, "C"), (50, "D")):
+            if score >= threshold:
+                return letter
+        return "F"
+
 
 class Scanner:
     """Runs a set of checks against a target under a given profile."""

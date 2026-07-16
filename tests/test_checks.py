@@ -56,7 +56,11 @@ async def test_security_headers_all_missing(mock_site):
     titles = {f.title for f in findings}
     assert "Missing HSTS header" in titles
     assert "Missing Content-Security-Policy header" in titles
-    assert len(findings) == 5
+    assert "Missing Permissions-Policy header" in titles
+    assert "Missing Cross-Origin-Opener-Policy header" in titles
+    # 9 hardening headers are checked; none are present here.
+    assert len(findings) == 9
+    assert all(f.owasp == "A05:2021" for f in findings)
 
 
 async def test_security_headers_present(mock_site):
@@ -65,15 +69,41 @@ async def test_security_headers_present(mock_site):
         "/",
         text="<html></html>",
         headers={
-            "Strict-Transport-Security": "max-age=31536000",
+            "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
             "Content-Security-Policy": "default-src 'self'",
             "X-Frame-Options": "SAMEORIGIN",
             "X-Content-Type-Options": "nosniff",
             "Referrer-Policy": "strict-origin",
+            "Permissions-Policy": "geolocation=()",
+            "Cross-Origin-Opener-Policy": "same-origin",
+            "Cross-Origin-Embedder-Policy": "require-corp",
+            "Cross-Origin-Resource-Policy": "same-origin",
         },
     )
     findings = await _run(SecurityHeadersCheck(), site)
     assert findings == []
+
+
+async def test_security_headers_weak_csp(mock_site):
+    site = mock_site()
+    site.add(
+        "/",
+        text="<html></html>",
+        headers={"Content-Security-Policy": "default-src 'self' 'unsafe-inline'"},
+    )
+    findings = await _run(SecurityHeadersCheck(), site)
+    weak = [f for f in findings if "weakened" in f.title]
+    assert len(weak) == 1 and weak[0].owasp == "A03:2021"
+
+
+async def test_security_headers_hsts_not_preload_ready(mock_site):
+    site = mock_site()
+    site.add(
+        "/", text="<html></html>",
+        headers={"Strict-Transport-Security": "max-age=600"},
+    )
+    findings = await _run(SecurityHeadersCheck(), site)
+    assert any(f.title == "HSTS not ready for preload" for f in findings)
 
 
 async def test_xmlrpc_enabled(mock_site):
@@ -133,6 +163,23 @@ async def test_sensitive_files_debug_log(mock_site):
     site.add("/wp-content/debug.log", text="[15-Jul-2026] PHP Notice: undefined")
     findings = await _run(SensitiveFilesCheck(), site)
     assert any("debug log" in f.title for f in findings)
+
+
+async def test_sensitive_files_sql_dump(mock_site):
+    site = mock_site()
+    site.add("/backup.sql", text="INSERT INTO wp_users VALUES (1,'admin');")
+    findings = await _run(SensitiveFilesCheck(), site)
+    dump = [f for f in findings if "database dump" in f.title]
+    assert len(dump) == 1
+    assert dump[0].severity.value == "critical"
+    assert dump[0].owasp == "A05:2021" and dump[0].cwe == "CWE-538"
+
+
+async def test_sensitive_files_lockfile(mock_site):
+    site = mock_site()
+    site.add("/package-lock.json", text='{"lockfileVersion": 3, "packages": {}}')
+    findings = await _run(SensitiveFilesCheck(), site)
+    assert any("package-lock.json" in f.title for f in findings)
 
 
 async def test_directory_listing(mock_site):

@@ -67,7 +67,10 @@ package) so registration runs.
    to fix it.
 5. **Minimal evidence.** Put a short confirmation string in `evidence` — never
    full response bodies or secret values.
-6. **Mark active probes.** If your check requests non-core paths, set
+6. **Map it.** Set `owasp` (e.g. `"A05:2021"`) and `cwe` (e.g. `"CWE-200"`) on
+   findings where a category clearly applies — these flow into SARIF, Markdown,
+   and JSON reports. Set `cve`/`cvss` when a specific advisory applies.
+7. **Mark active probes.** If your check requests non-core paths, set
    `requires_active_probes = True` so it's skipped in the `passive` profile.
 
 ## Testing your check

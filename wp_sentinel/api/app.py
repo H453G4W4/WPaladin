@@ -23,15 +23,15 @@ import asyncio
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse, PlainTextResponse, Response
+from fastapi.responses import HTMLResponse, Response
 from pydantic import BaseModel, Field
 
 from .. import __version__
 from ..checks.base import all_checks
 from ..core.profile import PROFILES, get_profile
 from ..core.scanner import Scanner
-from ..core.target import AuthorizationError, Target
-from ..report import render
+from ..core.target import Target
+from ..report import MEDIA_TYPES, render
 from ..store import ScanRecord, ScanStatus, ScanStore
 
 _DASHBOARD = Path(__file__).parent / "dashboard.html"
@@ -117,10 +117,7 @@ def create_app(store: ScanStore | None = None, *, transport=None) -> FastAPI:
             body = render(format, record.result)
         except KeyError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
-        media = {"json": "application/json", "html": "text/html", "csv": "text/csv"}[
-            format
-        ]
-        return Response(content=body, media_type=media)
+        return Response(content=body, media_type=MEDIA_TYPES.get(format, "text/plain"))
 
     @app.get("/api/v1/checks")
     async def list_checks() -> list[dict]:
