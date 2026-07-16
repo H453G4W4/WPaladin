@@ -21,5 +21,6 @@ from . import cookies  # noqa: F401
 from . import cors  # noqa: F401
 from . import server_tech  # noqa: F401
 from . import wp_endpoints  # noqa: F401
+from . import known_vulns  # noqa: F401
 
 __all__ = ["Check", "CheckContext", "register", "all_checks"]

@@ -1,0 +1,54 @@
+{
+  "schema": 1,
+  "note": "Seed dataset for demonstration and testing. Replace with a live feed (WPScan, NVD, or a wpvulndb export) for production coverage. Core entries below are real, historically-public advisories; the 'sample-vulnerable-plugin' entry is an illustrative placeholder, not a real plugin.",
+  "advisories": [
+    {
+      "id": "wp-core-2017-rest-content-injection",
+      "component_type": "core",
+      "slug": "wordpress",
+      "title": "WordPress core: REST API content injection / privilege escalation",
+      "severity": "high",
+      "cvss": 7.5,
+      "cve": "CVE-2017-1001000",
+      "introduced": "4.7.0",
+      "fixed": "4.7.2",
+      "reference": "https://wordpress.org/news/2017/01/wordpress-4-7-2-security-release/"
+    },
+    {
+      "id": "wp-core-2017-rest-user-enumeration",
+      "component_type": "core",
+      "slug": "wordpress",
+      "title": "WordPress core: user enumeration via REST API",
+      "severity": "medium",
+      "cvss": 5.3,
+      "cve": "CVE-2017-5487",
+      "introduced": "4.7.0",
+      "fixed": "4.7.1",
+      "reference": "https://wordpress.org/news/2017/01/wordpress-4-7-1-security-release/"
+    },
+    {
+      "id": "wp-core-2022-sql-injection-wp-query",
+      "component_type": "core",
+      "slug": "wordpress",
+      "title": "WordPress core: SQL injection via WP_Query (CVE-2022-21661)",
+      "severity": "high",
+      "cvss": 8.0,
+      "cve": "CVE-2022-21661",
+      "introduced": "3.7.0",
+      "fixed": "5.8.3",
+      "reference": "https://wordpress.org/news/2022/01/wordpress-5-8-3-security-release/"
+    },
+    {
+      "id": "sample-plugin-demo-xss",
+      "component_type": "plugin",
+      "slug": "sample-vulnerable-plugin",
+      "title": "SAMPLE (illustrative, not a real plugin): stored XSS in settings",
+      "severity": "medium",
+      "cvss": 6.1,
+      "cve": null,
+      "introduced": "1.0.0",
+      "fixed": "1.4.3",
+      "reference": "https://example.com/advisories/sample-vulnerable-plugin"
+    }
+  ]
+}

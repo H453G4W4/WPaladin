@@ -36,6 +36,9 @@ of WordPress security tooling. That scope is a feature, not a limitation.
 - Exposed sensitive-file detection (`.env`, `.git`, `.svn`, config backups, DB
   dumps, lockfiles, editor swap files, debug logs, …)
 - Directory-listing detection
+- **Known-vulnerability correlation** — matches detected core/plugin versions
+  against a CVE advisory database and reports the specific CVEs, CVSS scores,
+  and the exact patched version to upgrade to (detection only, no exploitation)
 - Severity + CVSS-style scoring, **OWASP Top 10 / CWE mapping**, and a **0–100
   hardening score** with a letter grade
 - Reports in **JSON, HTML, CSV, SARIF, and Markdown**
@@ -94,6 +97,42 @@ wp-sentinel profiles    # passive / standard / thorough
 ```
 
 You can also run it as a module: `python -m wp_sentinel ...`.
+
+## Vulnerability intelligence
+
+Beyond reporting that a version is *disclosed*, WP-Sentinel correlates the
+core/plugin versions it detects against a database of known advisories and tells
+you exactly which CVEs affect your installation and what to upgrade to:
+
+```
+[HIGH]   CVSS 8.0  CVE-2022-21661  WordPress core 4.7.0: SQL injection via WP_Query
+         fix: Upgrade WordPress core to 5.8.3 or later.
+```
+
+This is **detection and intelligence, not exploitation** — it looks up what is
+already publicly known about the versions it finds; it never attempts to trigger
+a vulnerability.
+
+The bundled dataset (`wp_sentinel/intel/data/advisories.json`) is a small seed
+for demonstration. For production coverage, replace or extend it with a live
+feed (e.g. a WPScan or NVD export) in the same schema:
+
+```json
+{
+  "advisories": [
+    {
+      "id": "unique-id", "component_type": "plugin", "slug": "some-plugin",
+      "title": "Stored XSS in settings", "severity": "medium", "cvss": 6.1,
+      "cve": "CVE-2024-XXXXX", "introduced": "1.0.0", "fixed": "1.4.3",
+      "reference": "https://…"
+    }
+  ]
+}
+```
+
+The affected-range model (`introduced` inclusive, `fixed` exclusive) matches
+OSV / GitHub Security Advisories. Load a custom database programmatically with
+`VulnerabilityDatabase.load(path)`.
 
 ## Browser dashboard & API
 
